@@ -29,6 +29,11 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://task_hub:task_hub_password@localhost:7804/task_hub_test?schema=public
+        run: npx prisma generate
+
       - name: Start test database
         run: docker compose --profile test up -d db_test
 
