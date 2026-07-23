@@ -162,3 +162,13 @@
 Ожидаемый результат:
 
     422 UNPROCESSABLE_ENTITY
+
+## Проверка подключения к базе данных
+
+    Invoke-RestMethod http://localhost:3000/health/db
+
+Ожидаемый результат:
+
+    status database
+    ------ --------
+    ok     ok

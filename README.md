@@ -235,3 +235,4 @@ OpenAPI JSON:
 - `docs/http-examples.md` — примеры ручной проверки API.
 - `docs/integration.md` — интеграционный подход.
 - `openapi.json` — OpenAPI-контракт.
+
