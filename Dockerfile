@@ -9,6 +9,7 @@ COPY prisma.config.ts ./
 RUN npm ci
 
 COPY tsconfig.json ./
+COPY openapi.json ./
 COPY src ./src
 
 ENV DATABASE_URL="postgresql://task_hub:task_hub_password@localhost:5432/task_hub?schema=public"

@@ -4,6 +4,7 @@ import helmet from "helmet";
 
 import { errorHandler } from "./common/middleware/error-handler.js";
 import { requestIdMiddleware } from "./common/middleware/request-id.js";
+import { registerOpenApiDocs } from "./docs/openapi.js";
 import { taskRoutes } from "./modules/tasks/task.routes.js";
 
 export function createApp() {
@@ -20,6 +21,8 @@ export function createApp() {
       service: "task-hub"
     });
   });
+
+  registerOpenApiDocs(app);
 
   app.use("/tasks", taskRoutes);
 
