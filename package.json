@@ -20,11 +20,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "pg": "^8.22.0",
     "pino": "^9.7.0",
     "zod": "^4.0.10"
   },

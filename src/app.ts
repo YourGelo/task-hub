@@ -2,6 +2,8 @@
 import express from "express";
 import helmet from "helmet";
 
+import { taskRoutes } from "./modules/tasks/task.routes.js";
+
 export function createApp() {
   const app = express();
 
@@ -15,6 +17,8 @@ export function createApp() {
       service: "task-hub"
     });
   });
+
+  app.use("/tasks", taskRoutes);
 
   return app;
 }
