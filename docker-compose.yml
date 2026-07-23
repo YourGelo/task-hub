@@ -1,4 +1,20 @@
-services:
+﻿services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-hub-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://task_hub:task_hub_password@db:5432/task_hub?schema=public
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:16-alpine
     container_name: task-hub-db
@@ -11,6 +27,11 @@ services:
       - "5433:5432"
     volumes:
       - task-hub-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U task_hub -d task_hub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   task-hub-postgres-data:
