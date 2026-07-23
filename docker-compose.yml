@@ -22,7 +22,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 7801
-      DATABASE_URL: ${DATABASE_URL:-postgresql://task_hub:task_hub_password@db:5432/task_hub?schema=public}
+      DATABASE_URL: postgresql://task_hub:${POSTGRES_PASSWORD:-task_hub_password}@db:5432/task_hub?schema=public
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:7802,http://localhost:5173,https://test.slimebase.ru}
     ports:
       - "${BACKEND_PORT:-7801}:7801"
