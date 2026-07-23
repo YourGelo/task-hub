@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: task-hub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: task_hub
+      POSTGRES_PASSWORD: task_hub_password
+      POSTGRES_DB: task_hub
+    ports:
+      - "5433:5432"
+    volumes:
+      - task-hub-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  task-hub-postgres-data:
