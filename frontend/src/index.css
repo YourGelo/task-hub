@@ -1,0 +1,29 @@
+:root {
+  --ink: #20251f;
+  --ink-soft: #485045;
+  --muted: #747c71;
+  --surface: #ffffff;
+  --background: #f4f6f2;
+  --border: #e1e5de;
+  --border-strong: #c6ccc2;
+  --accent: #b6dc57;
+  --accent-dark: #85aa2d;
+  --success: #259b62;
+  --danger: #c73d3d;
+  --sans: Inter, 'Segoe UI', Arial, sans-serif;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  color: var(--ink);
+  background: var(--background);
+  font-family: var(--sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--background); }
+body { min-width: 320px; min-height: 100vh; margin: 0; }
+button, select, input { font: inherit; }
+code { font-family: var(--mono); }
+::selection { background: rgba(182, 220, 87, .42); }

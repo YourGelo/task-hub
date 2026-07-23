@@ -1,6 +1,6 @@
 ﻿# Task Hub API
 
-Task Hub API — REST API сервис для учёта задач.
+Task Hub — REST API сервис для учёта задач и отдельный frontend demo-client.
 
 Сервис позволяет создавать, получать, обновлять, удалять и искать задачи. Данные хранятся в PostgreSQL и переживают перезапуск приложения. Удаление реализовано мягко через `deleted_at`, поэтому публичные endpoints больше не возвращают удалённые задачи.
 
@@ -17,11 +17,13 @@ Task Hub API — REST API сервис для учёта задач.
 - Валидация входных данных через Zod.
 - Единый формат ошибок.
 - Request ID для трассировки ошибок.
+- Доменные события и интерфейс publisher для будущих интеграций.
 - PostgreSQL-хранилище.
 - Prisma migrations.
 - Docker-запуск приложения и базы данных.
 - OpenAPI-контракт.
 - Swagger UI.
+- Отдельный React demo-client, работающий с реальным REST API.
 
 ## Стек
 
@@ -33,6 +35,9 @@ Task Hub API — REST API сервис для учёта задач.
 - Zod
 - Docker
 - OpenAPI / Swagger UI
+- React
+- Vite
+- Nginx
 
 ## Быстрый запуск через Docker
 
@@ -40,21 +45,30 @@ Task Hub API — REST API сервис для учёта задач.
 
     docker compose up --build
 
-После запуска API будет доступен по адресу:
+После запуска доступны:
 
-    http://localhost:7801
+| Сервис | URL |
+|---|---|
+| Frontend demo-client | http://localhost:7802 |
+| Backend API | http://localhost:7801 |
+| API health | http://localhost:7801/health |
+| DB health | http://localhost:7801/health/db |
+| Swagger UI | http://localhost:7801/api-docs |
+| OpenAPI JSON | http://localhost:7801/openapi.json |
 
-Проверка состояния:
+Frontend и backend запускаются разными сервисами Docker Compose. Статические файлы
+frontend обслуживает Nginx; frontend не встраивается в Express.
 
-    http://localhost:7801/health
+Demo-client позволяет проверить без Postman:
 
-Swagger UI:
-
-    http://localhost:7801/api-docs
-
-OpenAPI JSON:
-
-    http://localhost:7801/openapi.json
+- создание через `POST`;
+- получение списка с одновременными фильтрами, сортировкой и пагинацией;
+- получение актуальной задачи по id перед редактированием;
+- быстрые частичные изменения через `PATCH`;
+- полную замену изменяемых полей через `PUT`;
+- очистку `due_date` через `null`;
+- soft-delete через `DELETE`;
+- единый формат ошибок, включая `details` и `request_id`.
 
 ## Локальный запуск для разработки
 
@@ -80,6 +94,15 @@ OpenAPI JSON:
 
     npm run dev
 
+В отдельном терминале установить зависимости и запустить frontend:
+
+    cd frontend
+    npm install
+    npm run dev
+
+Frontend будет доступен на `http://localhost:7802` и по умолчанию отправляет
+запросы на `http://localhost:7801`.
+
 ## Переменные окружения
 
 Пример находится в `.env.example`.
@@ -91,6 +114,8 @@ OpenAPI JSON:
 | `NODE_ENV` | Окружение приложения: `development`, `test`, `production` |
 | `PORT` | HTTP-порт приложения |
 | `DATABASE_URL` | Строка подключения к PostgreSQL |
+| `CORS_ORIGIN` | Список разрешённых frontend origin через запятую |
+| `VITE_API_BASE_URL` | Backend URL, встраиваемый в frontend при сборке |
 
 Для локального запуска с базой из docker-compose:
 
@@ -100,6 +125,14 @@ OpenAPI JSON:
 
     postgresql://task_hub:task_hub_password@db:5432/task_hub?schema=public
 
+Локальная настройка frontend находится в `frontend/.env.development`:
+
+    VITE_API_BASE_URL=http://localhost:7801
+
+Для production-сборки можно передать:
+
+    VITE_API_BASE_URL=https://api.test.slimebase.ru docker compose up --build
+
 ## Скрипты
 
 | Команда | Назначение |
@@ -108,6 +141,14 @@ OpenAPI JSON:
 | `npm run build` | Компиляция TypeScript в `dist` |
 | `npm start` | Запуск собранного приложения |
 | `npm run typecheck` | Проверка типов без сборки |
+
+Frontend-команды запускаются из папки `frontend`:
+
+| Команда | Назначение |
+|---|---|
+| `npm run dev` | Vite dev server на порту `7802` |
+| `npm run typecheck` | Проверка типов frontend |
+| `npm run build` | Production-сборка frontend |
 
 ## Модель задачи
 
@@ -217,6 +258,10 @@ OpenAPI JSON:
         database/
       modules/
         tasks/
+          task.events.ts
+      integrations/
+        integration-event-publisher.ts
+        noop-event-publisher.ts
     prisma/
       schema.prisma
       migrations/
@@ -224,6 +269,11 @@ OpenAPI JSON:
       api-decisions.md
       architecture.md
       requirements.md
+    frontend/
+      src/
+      Dockerfile
+      nginx.conf
+      package.json
 
 ## Документация
 
@@ -270,3 +320,10 @@ Backend поддерживает настройку разрешённых front
 - фильтрация, сортировка и пагинация списка;
 - обновление задачи;
 - soft-delete.
+- строгая семантика `PUT` и `PATCH`;
+- обязательный timezone в `due_date`;
+- разрешение прошедшего срока при обновлении;
+- совместная работа фильтрации, сортировки и пагинации;
+- порядок приоритетов и `NULLS LAST` для срока;
+- доменные события задач;
+- единый JSON-ответ для неизвестных маршрутов.
