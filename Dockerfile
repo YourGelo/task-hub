@@ -19,4 +19,7 @@ RUN npm run build
 
 EXPOSE 7801
 
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:7801/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));"
+
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

@@ -1,6 +1,7 @@
-﻿import type { ErrorRequestHandler } from "express";
+import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
 
+import { logger } from "../../config/logger.js";
 import { AppError } from "../errors/app-error.js";
 
 function isJsonSyntaxError(error: unknown): error is SyntaxError {
@@ -51,7 +52,13 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     return;
   }
 
-  console.error(error);
+  logger.error(
+    {
+      err: error,
+      request_id: requestId
+    },
+    "Unexpected request error"
+  );
 
   res.status(500).json({
     error: {

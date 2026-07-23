@@ -1,10 +1,27 @@
-﻿import request from "supertest";
+import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/infrastructure/database/prisma.js";
 
 const app = createApp();
+const futureDate = "2035-01-01T10:00:00Z";
+const pastDate = "2020-01-01T10:00:00Z";
+
+async function createTask(
+  overrides: Record<string, unknown> = {}
+): Promise<Record<string, unknown>> {
+  const response = await request(app)
+    .post("/tasks")
+    .send({
+      title: "Test task",
+      priority: "medium",
+      ...overrides
+    })
+    .expect(201);
+
+  return response.body as Record<string, unknown>;
+}
 
 beforeAll(async () => {
   await prisma.$connect();
@@ -19,38 +36,47 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-describe("health endpoints", () => {
-  it("returns application health", async () => {
-    const response = await request(app)
+describe("service endpoints", () => {
+  it("returns application and database health", async () => {
+    await request(app)
       .get("/health")
-      .expect(200);
+      .expect(200, {
+        status: "ok",
+        service: "task-hub"
+      });
 
-    expect(response.body).toEqual({
-      status: "ok",
-      service: "task-hub"
-    });
+    await request(app)
+      .get("/health/db")
+      .expect(200, {
+        status: "ok",
+        database: "ok"
+      });
   });
 
-  it("returns database health", async () => {
+  it("returns JSON for an unknown route and preserves request id", async () => {
     const response = await request(app)
-      .get("/health/db")
-      .expect(200);
+      .get("/missing")
+      .set("X-Request-Id", "demo-request-id")
+      .expect(404);
 
-    expect(response.body).toEqual({
-      status: "ok",
-      database: "ok"
+    expect(response.headers["x-request-id"]).toBe("demo-request-id");
+    expect(response.body.error).toEqual({
+      code: "NOT_FOUND",
+      message: "Route not found",
+      details: [],
+      request_id: "demo-request-id"
     });
   });
 });
 
-describe("tasks API", () => {
-  it("creates a task", async () => {
+describe("POST /tasks", () => {
+  it("creates a task, applies the default status and returns server fields", async () => {
     const response = await request(app)
       .post("/tasks")
       .send({
-        title: "Create tests",
+        title: "  Create tests  ",
         priority: "high",
-        due_date: "2030-01-01T10:00:00Z"
+        due_date: "2035-01-01T13:00:00+03:00"
       })
       .expect(201);
 
@@ -59,133 +85,265 @@ describe("tasks API", () => {
       title: "Create tests",
       status: "todo",
       priority: "high",
-      due_date: "2030-01-01T10:00:00.000Z"
+      due_date: "2035-01-01T10:00:00.000Z"
     });
+    expect(response.body.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+    expect(Date.parse(response.body.created_at)).not.toBeNaN();
+    expect(Date.parse(response.body.updated_at)).not.toBeNaN();
   });
 
-  it("rejects invalid priority", async () => {
+  it.each([
+    [{ title: "Invalid task", priority: "urgent" }, "priority"],
+    [{ title: "", priority: "low" }, "title"],
+    [{ title: "No timezone", priority: "low", due_date: "2035-01-01T10:00:00" }, "due_date"],
+    [{ title: "Date only", priority: "low", due_date: "2035-01-01" }, "due_date"],
+    [{ title: "Technical field", priority: "low", id: crypto.randomUUID() }, ""]
+  ])("rejects invalid create body %#", async (body, field) => {
     const response = await request(app)
       .post("/tasks")
-      .send({
-        title: "Invalid task",
-        priority: "urgent"
-      })
+      .send(body)
       .expect(400);
 
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
-    expect(response.body.error.details[0].field).toBe("priority");
+    expect(response.body.error.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field
+        })
+      ])
+    );
   });
 
-  it("rejects due_date in the past on create", async () => {
+  it("rejects due_date in the past as a business-rule violation", async () => {
     const response = await request(app)
       .post("/tasks")
       .send({
         title: "Past task",
         priority: "low",
-        due_date: "2020-01-01T10:00:00Z"
+        due_date: pastDate
       })
       .expect(422);
 
-    expect(response.body.error.code).toBe("UNPROCESSABLE_ENTITY");
+    expect(response.body.error).toMatchObject({
+      code: "UNPROCESSABLE_ENTITY",
+      details: [
+        {
+          field: "due_date",
+          message: "Expected a current or future timestamp"
+        }
+      ]
+    });
   });
 
-  it("lists tasks with filtering sorting and pagination", async () => {
-    await request(app)
+  it("returns INVALID_JSON for malformed JSON", async () => {
+    const response = await request(app)
       .post("/tasks")
-      .send({
-        title: "Low task",
-        priority: "low",
-        status: "todo",
-        due_date: "2030-01-03T10:00:00Z"
-      })
-      .expect(201);
+      .set("Content-Type", "application/json")
+      .send('{"title":')
+      .expect(400);
+
+    expect(response.body.error.code).toBe("INVALID_JSON");
+  });
+});
+
+describe("GET /tasks and GET /tasks/:id", () => {
+  it("gets an existing task and returns 404 for a missing task", async () => {
+    const task = await createTask();
+
+    const response = await request(app)
+      .get(`/tasks/${task.id}`)
+      .expect(200);
+
+    expect(response.body.id).toBe(task.id);
 
     await request(app)
-      .post("/tasks")
-      .send({
-        title: "Medium task",
-        priority: "medium",
-        status: "in_progress",
-        due_date: "2030-01-02T10:00:00Z"
-      })
-      .expect(201);
+      .get(`/${"tasks"}/${crypto.randomUUID()}`)
+      .expect(404);
+  });
 
-    await request(app)
-      .post("/tasks")
-      .send({
-        title: "High task",
-        priority: "high",
-        status: "done"
-      })
-      .expect(201);
+  it("rejects an invalid UUID", async () => {
+    const response = await request(app)
+      .get("/tasks/not-a-uuid")
+      .expect(400);
+
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    expect(response.body.error.details[0].field).toBe("id");
+  });
+
+  it("combines status filtering, priority sorting and pagination", async () => {
+    await createTask({ title: "High", priority: "high", status: "todo" });
+    await createTask({ title: "Low", priority: "low", status: "todo" });
+    await createTask({ title: "Medium", priority: "medium", status: "todo" });
+    await createTask({ title: "Done", priority: "low", status: "done" });
 
     const response = await request(app)
       .get("/tasks")
       .query({
+        status: "todo",
         sort: "priority",
         order: "asc",
-        offset: 0,
-        limit: 10
+        offset: 1,
+        limit: 1
       })
       .expect(200);
 
-    expect(response.body.items.map((task: { priority: string }) => task.priority)).toEqual([
-      "low",
-      "medium",
-      "high"
-    ]);
-
+    expect(response.body.items).toHaveLength(1);
+    expect(response.body.items[0].title).toBe("Medium");
     expect(response.body.pagination).toEqual({
-      offset: 0,
-      limit: 10,
+      offset: 1,
+      limit: 1,
       total: 3
     });
-
-    const filteredResponse = await request(app)
-      .get("/tasks")
-      .query({
-        status: "in_progress"
-      })
-      .expect(200);
-
-    expect(filteredResponse.body.items).toHaveLength(1);
-    expect(filteredResponse.body.items[0].title).toBe("Medium task");
   });
 
-  it("updates and deletes a task", async () => {
-    const createResponse = await request(app)
-      .post("/tasks")
-      .send({
-        title: "Task to update",
-        priority: "medium"
-      })
-      .expect(201);
+  it("keeps tasks without due_date last for both sort directions", async () => {
+    await createTask({ title: "No due date", priority: "low" });
+    await createTask({ title: "Later", priority: "low", due_date: "2035-01-03T10:00:00Z" });
+    await createTask({ title: "Earlier", priority: "low", due_date: "2035-01-02T10:00:00Z" });
 
-    const taskId = createResponse.body.id as string;
+    for (const order of ["asc", "desc"]) {
+      const response = await request(app)
+        .get("/tasks")
+        .query({ sort: "due_date", order })
+        .expect(200);
+
+      expect(response.body.items.at(-1).title).toBe("No due date");
+    }
+  });
+
+  it.each([
+    { offset: -1 },
+    { limit: 0 },
+    { limit: 101 },
+    { status: "archived" },
+    { sort: "title" },
+    { order: "sideways" },
+    { unknown: "value" }
+  ])("rejects invalid list query %#", async (query) => {
+    const response = await request(app)
+      .get("/tasks")
+      .query(query)
+      .expect(400);
+
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
+describe("PATCH and PUT /tasks/:id", () => {
+  it("partially updates a task and allows a past or null due_date", async () => {
+    const task = await createTask({ due_date: futureDate });
 
     const patchResponse = await request(app)
-      .patch(`/tasks/${taskId}`)
+      .patch(`/tasks/${task.id}`)
       .send({
+        title: "Updated title",
         status: "in_progress",
-        priority: "high"
+        due_date: pastDate
       })
       .expect(200);
 
     expect(patchResponse.body).toMatchObject({
-      id: taskId,
-      title: "Task to update",
+      id: task.id,
+      title: "Updated title",
       status: "in_progress",
-      priority: "high"
+      priority: "medium",
+      due_date: "2020-01-01T10:00:00.000Z"
     });
 
+    const clearResponse = await request(app)
+      .patch(`/tasks/${task.id}`)
+      .send({ due_date: null })
+      .expect(200);
+
+    expect(clearResponse.body.due_date).toBeNull();
+  });
+
+  it.each([
+    {},
+    { id: crypto.randomUUID() },
+    { created_at: futureDate }
+  ])("rejects an empty or technical PATCH body %#", async (body) => {
+    const task = await createTask();
+    const response = await request(app)
+      .patch(`/tasks/${task.id}`)
+      .send(body)
+      .expect(400);
+
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("fully replaces mutable fields with PUT and allows a past due_date", async () => {
+    const task = await createTask({
+      title: "Before PUT",
+      priority: "low",
+      due_date: futureDate
+    });
+
+    const response = await request(app)
+      .put(`/tasks/${task.id}`)
+      .send({
+        title: "After PUT",
+        status: "done",
+        priority: "high",
+        due_date: pastDate
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: task.id,
+      title: "After PUT",
+      status: "done",
+      priority: "high",
+      due_date: "2020-01-01T10:00:00.000Z"
+    });
+  });
+
+  it("requires all mutable fields including due_date for PUT", async () => {
+    const task = await createTask();
+    const response = await request(app)
+      .put(`/tasks/${task.id}`)
+      .send({
+        title: "Incomplete PUT",
+        status: "todo",
+        priority: "low"
+      })
+      .expect(400);
+
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    expect(response.body.error.details[0].field).toBe("due_date");
+  });
+});
+
+describe("DELETE /tasks/:id", () => {
+  it("soft-deletes a task, preserves it in the database and hides it from the API", async () => {
+    const task = await createTask({ status: "in_progress" });
+
     await request(app)
-      .delete(`/tasks/${taskId}`)
+      .delete(`/tasks/${task.id}`)
       .expect(204);
 
-    const getDeletedResponse = await request(app)
-      .get(`/tasks/${taskId}`)
+    const storedTask = await prisma.task.findUnique({
+      where: { id: task.id as string }
+    });
+
+    expect(storedTask).not.toBeNull();
+    expect(storedTask?.status).toBe("in_progress");
+    expect(storedTask?.deletedAt).toBeInstanceOf(Date);
+
+    await request(app)
+      .get(`/tasks/${task.id}`)
       .expect(404);
 
-    expect(getDeletedResponse.body.error.code).toBe("NOT_FOUND");
+    const listResponse = await request(app)
+      .get("/tasks")
+      .expect(200);
+
+    expect(listResponse.body.items).toHaveLength(0);
+
+    await request(app)
+      .delete(`/tasks/${task.id}`)
+      .expect(404);
   });
 });

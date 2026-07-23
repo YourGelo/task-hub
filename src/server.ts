@@ -1,8 +1,14 @@
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
+import { logger } from "./config/logger.js";
 
 const app = createApp();
 
 app.listen(env.PORT, () => {
-  console.log(`Task Hub API запущен: http://localhost:${env.PORT}`);
+  logger.info(
+    {
+      port: env.PORT
+    },
+    "Task Hub API started"
+  );
 });
