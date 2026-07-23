@@ -32,3 +32,9 @@ export class UnprocessableEntityError extends AppError {
     super(422, "UNPROCESSABLE_ENTITY", message, details);
   }
 }
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = "Service unavailable", details: ErrorDetail[] = []) {
+    super(503, "SERVICE_UNAVAILABLE", message, details);
+  }
+}

@@ -6,7 +6,7 @@
 
 ## Health-check
 
-    Invoke-RestMethod http://localhost:3000/health
+    Invoke-RestMethod http://localhost:7801/health
 
 ## Создание задачи со сроком
 
@@ -19,7 +19,7 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    $response = Invoke-RestMethod -Method POST "http://localhost:3000/tasks" -ContentType "application/json; charset=utf-8" -Body $body
+    $response = Invoke-RestMethod -Method POST "http://localhost:7801/tasks" -ContentType "application/json; charset=utf-8" -Body $body
 
     $response
 
@@ -32,7 +32,7 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    $response = Invoke-RestMethod -Method POST "http://localhost:3000/tasks" -ContentType "application/json; charset=utf-8" -Body $body
+    $response = Invoke-RestMethod -Method POST "http://localhost:7801/tasks" -ContentType "application/json; charset=utf-8" -Body $body
 
     $response
 
@@ -43,23 +43,23 @@
 
 ## Получение задачи по id
 
-    Invoke-RestMethod "http://localhost:3000/tasks/$id"
+    Invoke-RestMethod "http://localhost:7801/tasks/$id"
 
 ## Получение списка задач
 
-    Invoke-RestMethod "http://localhost:3000/tasks"
+    Invoke-RestMethod "http://localhost:7801/tasks"
 
 ## Фильтрация по статусу
 
-    Invoke-RestMethod "http://localhost:3000/tasks?status=todo"
+    Invoke-RestMethod "http://localhost:7801/tasks?status=todo"
 
 ## Пагинация
 
-    Invoke-RestMethod "http://localhost:3000/tasks?offset=0&limit=10"
+    Invoke-RestMethod "http://localhost:7801/tasks?offset=0&limit=10"
 
 ## Сортировка по приоритету
 
-    $response = Invoke-RestMethod "http://localhost:3000/tasks?sort=priority&order=asc"
+    $response = Invoke-RestMethod "http://localhost:7801/tasks?sort=priority&order=asc"
 
     $response.items | Select-Object title, priority
 
@@ -77,7 +77,7 @@
 
 ## Сортировка по сроку
 
-    $response = Invoke-RestMethod "http://localhost:3000/tasks?sort=due_date&order=asc"
+    $response = Invoke-RestMethod "http://localhost:7801/tasks?sort=due_date&order=asc"
 
     $response.items | Select-Object title, due_date
 
@@ -91,7 +91,7 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    Invoke-RestMethod -Method PATCH "http://localhost:3000/tasks/$id" -ContentType "application/json; charset=utf-8" -Body $body
+    Invoke-RestMethod -Method PATCH "http://localhost:7801/tasks/$id" -ContentType "application/json; charset=utf-8" -Body $body
 
 ## Очистка due_date
 
@@ -101,7 +101,7 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    Invoke-RestMethod -Method PATCH "http://localhost:3000/tasks/$id" -ContentType "application/json; charset=utf-8" -Body $body
+    Invoke-RestMethod -Method PATCH "http://localhost:7801/tasks/$id" -ContentType "application/json; charset=utf-8" -Body $body
 
 ## Полная замена изменяемых полей
 
@@ -114,11 +114,11 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    Invoke-RestMethod -Method PUT "http://localhost:3000/tasks/$id" -ContentType "application/json; charset=utf-8" -Body $body
+    Invoke-RestMethod -Method PUT "http://localhost:7801/tasks/$id" -ContentType "application/json; charset=utf-8" -Body $body
 
 ## Удаление задачи
 
-    Invoke-WebRequest -Method DELETE "http://localhost:3000/tasks/$id"
+    Invoke-WebRequest -Method DELETE "http://localhost:7801/tasks/$id"
 
 Ожидаемый статус:
 
@@ -126,7 +126,7 @@
 
 ## Проверка после удаления
 
-    Invoke-WebRequest "http://localhost:3000/tasks/$id"
+    Invoke-WebRequest "http://localhost:7801/tasks/$id"
 
 Ожидаемый результат:
 
@@ -141,7 +141,7 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    Invoke-WebRequest -Method POST "http://localhost:3000/tasks" -ContentType "application/json; charset=utf-8" -Body $body
+    Invoke-WebRequest -Method POST "http://localhost:7801/tasks" -ContentType "application/json; charset=utf-8" -Body $body
 
 Ожидаемый результат:
 
@@ -157,7 +157,7 @@
 
     $body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
-    Invoke-WebRequest -Method POST "http://localhost:3000/tasks" -ContentType "application/json; charset=utf-8" -Body $body
+    Invoke-WebRequest -Method POST "http://localhost:7801/tasks" -ContentType "application/json; charset=utf-8" -Body $body
 
 Ожидаемый результат:
 
@@ -165,7 +165,18 @@
 
 ## Проверка подключения к базе данных
 
-    Invoke-RestMethod http://localhost:3000/health/db
+    Invoke-RestMethod http://localhost:7801/health/db
+
+Ожидаемый результат:
+
+    status database
+    ------ --------
+    ok     ok
+
+
+## Проверка подключения к базе данных
+
+    Invoke-RestMethod http://localhost:7801/health/db
 
 Ожидаемый результат:
 

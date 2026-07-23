@@ -2,6 +2,7 @@
 import express from "express";
 import helmet from "helmet";
 
+import { corsOptions } from "./config/cors.js";
 import { errorHandler } from "./common/middleware/error-handler.js";
 import { requestIdMiddleware } from "./common/middleware/request-id.js";
 import { registerOpenApiDocs } from "./docs/openapi.js";
@@ -13,7 +14,7 @@ export function createApp() {
 
   app.use(requestIdMiddleware);
   app.use(helmet());
-  app.use(cors());
+  app.use(cors(corsOptions));
   app.use(express.json());
 
   app.use("/health", healthRoutes);

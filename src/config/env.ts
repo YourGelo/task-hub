@@ -12,11 +12,15 @@ const envSchema = z.object({
     .number()
     .int()
     .positive()
-    .default(3000),
+    .default(7801),
 
   DATABASE_URL: z
     .string()
-    .min(1, "DATABASE_URL is required")
+    .min(1, "DATABASE_URL is required"),
+
+  CORS_ORIGIN: z
+    .string()
+    .default("http://localhost:7802,http://localhost:5173")
 });
 
 export const env = envSchema.parse(process.env);

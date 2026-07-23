@@ -42,19 +42,19 @@ Task Hub API — REST API сервис для учёта задач.
 
 После запуска API будет доступен по адресу:
 
-    http://localhost:3000
+    http://localhost:7801
 
 Проверка состояния:
 
-    http://localhost:3000/health
+    http://localhost:7801/health
 
 Swagger UI:
 
-    http://localhost:3000/api-docs
+    http://localhost:7801/api-docs
 
 OpenAPI JSON:
 
-    http://localhost:3000/openapi.json
+    http://localhost:7801/openapi.json
 
 ## Локальный запуск для разработки
 
@@ -236,3 +236,14 @@ OpenAPI JSON:
 - `docs/integration.md` — интеграционный подход.
 - `openapi.json` — OpenAPI-контракт.
 
+
+
+## CORS
+
+Backend поддерживает настройку разрешённых frontend origin через переменную окружения `CORS_ORIGIN`.
+
+Пример для локальной разработки и будущего demo frontend:
+
+    CORS_ORIGIN="http://localhost:7802,http://localhost:5173,https://test.slimebase.ru"
+
+Запросы без браузерного `Origin`, например из curl, PowerShell, Postman или Swagger, разрешаются.

@@ -1,5 +1,6 @@
 ﻿import type { Request, Response } from "express";
 
+import { ServiceUnavailableError } from "../../common/errors/app-error.js";
 import { HealthService } from "./health.service.js";
 
 export class HealthController {
@@ -10,8 +11,20 @@ export class HealthController {
   };
 
   getDatabaseHealth = async (_req: Request, res: Response) => {
-    const health = await this.healthService.getDatabaseHealth();
+    try {
+      const health = await this.healthService.getDatabaseHealth();
 
-    res.status(200).json(health);
+      res.status(200).json(health);
+    } catch {
+      throw new ServiceUnavailableError(
+        "Database is unavailable",
+        [
+          {
+            field: "database",
+            message: "PostgreSQL connection check failed"
+          }
+        ]
+      );
+    }
   };
 }

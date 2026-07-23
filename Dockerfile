@@ -17,6 +17,6 @@ ENV DATABASE_URL="postgresql://task_hub:task_hub_password@localhost:5432/task_hu
 RUN npx prisma generate
 RUN npm run build
 
-EXPOSE 3000
+EXPOSE 7801
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
