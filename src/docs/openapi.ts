@@ -4,14 +4,22 @@ import { join } from "node:path";
 import type { Express, Request, Response } from "express";
 import swaggerUi from "swagger-ui-express";
 
+type OpenApiServer = {
+  url: string;
+  description?: string;
+};
+
+type OpenApiDocument = {
+  servers?: OpenApiServer[];
+  [key: string]: unknown;
+};
+
 const openApiDocumentRaw = readFileSync(
   join(process.cwd(), "openapi.json"),
   "utf-8"
 ).replace(/^\uFEFF/, "");
 
-const openApiDocument = JSON.parse(
-  openApiDocumentRaw
-) as Parameters<typeof swaggerUi.setup>[0];
+const openApiDocument = JSON.parse(openApiDocumentRaw) as OpenApiDocument;
 
 openApiDocument.servers = [
   {
