@@ -40,14 +40,19 @@ runs-on:
 
 ## GitHub Secrets
 
-В настройках репозитория нужно добавить repository secrets:
+В настройках репозитория нужно добавить repository secret:
 
 | Secret | Пример | Описание |
 |---|---|---|
 | `POSTGRES_PASSWORD` | `change_me_to_strong_password` | Пароль PostgreSQL |
-| `DATABASE_URL` | `postgresql://task_hub:change_me_to_strong_password@db:5432/task_hub?schema=public` | Строка подключения backend к PostgreSQL внутри compose network |
 
-Пароль в `POSTGRES_PASSWORD` и пароль внутри `DATABASE_URL` должны совпадать.
+Backend внутри Docker Compose подключается к PostgreSQL по внутреннему имени сервиса `db`:
+
+```text
+postgresql://task_hub:<POSTGRES_PASSWORD>@db:5432/task_hub?schema=public
+```
+
+Для пароля лучше использовать безопасную строку без специальных URL-символов, например hex-строку.
 
 ## Production env
 
@@ -60,7 +65,6 @@ FRONTEND_PORT=7802
 DB_PORT=5433
 PORT=7801
 POSTGRES_PASSWORD=<secret>
-DATABASE_URL=<secret>
 CORS_ORIGIN=https://test.slimebase.ru
 VITE_API_BASE_URL=https://api.test.slimebase.ru
 ```
@@ -89,7 +93,6 @@ FRONTEND_PORT=7802
 DB_PORT=5433
 PORT=7801
 POSTGRES_PASSWORD=change_me_to_strong_password
-DATABASE_URL=postgresql://task_hub:change_me_to_strong_password@db:5432/task_hub?schema=public
 CORS_ORIGIN=https://test.slimebase.ru
 VITE_API_BASE_URL=https://api.test.slimebase.ru
 EOF
