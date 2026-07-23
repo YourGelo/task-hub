@@ -1,0 +1,70 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: task-hub-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to server
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.conclusion == 'success'
+      }}
+    runs-on:
+      - self-hosted
+      - slimeserver
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write production env
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL secret is not set" >&2
+            exit 1
+          fi
+
+          if [ -z "$POSTGRES_PASSWORD" ]; then
+            echo "POSTGRES_PASSWORD secret is not set" >&2
+            exit 1
+          fi
+
+          cat > .env <<EOF
+          NODE_ENV=production
+          BACKEND_PORT=7801
+          FRONTEND_PORT=7802
+          DB_PORT=5433
+          PORT=7801
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          DATABASE_URL=$DATABASE_URL
+          CORS_ORIGIN=https://test.slimebase.ru
+          VITE_API_BASE_URL=https://api.test.slimebase.ru
+          EOF
+
+      - name: Deploy compose stack
+        run: docker compose up -d --build --remove-orphans
+
+      - name: Show compose status
+        run: docker compose ps
+
+      - name: Prune old Docker images
+        run: docker image prune -f
