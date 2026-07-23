@@ -34,5 +34,27 @@
       timeout: 5s
       retries: 10
 
+  db_test:
+    image: postgres:16-alpine
+    container_name: task-hub-db-test
+    restart: unless-stopped
+    profiles:
+      - test
+    environment:
+      POSTGRES_USER: task_hub
+      POSTGRES_PASSWORD: task_hub_password
+      POSTGRES_DB: task_hub_test
+    ports:
+      - "7804:5432"
+    volumes:
+      - task-hub-postgres-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U task_hub -d task_hub_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   task-hub-postgres-data:
+  task-hub-postgres-test-data:
+

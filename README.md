@@ -247,3 +247,26 @@ Backend поддерживает настройку разрешённых front
     CORS_ORIGIN="http://localhost:7802,http://localhost:5173,https://test.slimebase.ru"
 
 Запросы без браузерного `Origin`, например из curl, PowerShell, Postman или Swagger, разрешаются.
+
+## Автоматические тесты
+
+Для интеграционных тестов используется отдельная PostgreSQL-база `db_test`, которая запускается через compose profile `test`.
+
+Запустить тестовую базу:
+
+    docker compose --profile test up -d db_test
+
+Запустить тесты:
+
+    npm test
+
+Что проверяется:
+
+- `/health`;
+- `/health/db`;
+- создание задачи;
+- валидация ошибок;
+- бизнес-правило `due_date` в прошлом;
+- фильтрация, сортировка и пагинация списка;
+- обновление задачи;
+- soft-delete.

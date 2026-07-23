@@ -1,14 +1,18 @@
-{
+﻿{
   "name": "task-hub",
   "version": "0.1.0",
-  "description": "REST API сервис учёта задач",
+  "description": "REST API СЃРµСЂРІРёСЃ СѓС‡С‘С‚Р° Р·Р°РґР°С‡",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:migrate": "cross-env DATABASE_URL=postgresql://task_hub:task_hub_password@localhost:7804/task_hub_test?schema=public prisma migrate deploy",
+    "pretest": "npm run test:migrate",
+    "test": "cross-env NODE_ENV=test DATABASE_URL=postgresql://task_hub:task_hub_password@localhost:7804/task_hub_test?schema=public vitest run",
+    "test:watch": "cross-env NODE_ENV=test DATABASE_URL=postgresql://task_hub:task_hub_password@localhost:7804/task_hub_test?schema=public vitest"
   },
   "keywords": [
     "nodejs",
@@ -35,9 +39,14 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.1.0",
+    "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
+    "cross-env": "^10.1.0",
     "prisma": "^7.9.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }
+
