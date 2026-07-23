@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Express, Request, Response } from "express";
@@ -12,6 +12,13 @@ const openApiDocumentRaw = readFileSync(
 const openApiDocument = JSON.parse(
   openApiDocumentRaw
 ) as Parameters<typeof swaggerUi.setup>[0];
+
+openApiDocument.servers = [
+  {
+    url: "/",
+    description: "Current API host"
+  }
+];
 
 export function registerOpenApiDocs(app: Express) {
   app.get("/openapi.json", (_req: Request, res: Response) => {
