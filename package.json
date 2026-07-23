@@ -1,14 +1,14 @@
-﻿{
+{
   "name": "task-hub",
   "version": "0.1.0",
-  "description": "REST API СЃРµСЂРІРёСЃ СѓС‡С‘С‚Р° Р·Р°РґР°С‡",
+  "description": "REST API сервис учёта задач",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test:migrate": "cross-env DATABASE_URL=postgresql://task_hub:task_hub_password@localhost:7804/task_hub_test?schema=public prisma migrate deploy",
     "pretest": "npm run test:migrate",
     "test": "cross-env NODE_ENV=test DATABASE_URL=postgresql://task_hub:task_hub_password@localhost:7804/task_hub_test?schema=public vitest run",
@@ -49,4 +49,3 @@
     "vitest": "^4.1.10"
   }
 }
-
