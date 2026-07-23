@@ -1,7 +1,7 @@
 {
   "name": "task-hub",
   "version": "0.1.0",
-  "description": "REST API сервис учёта задач Junior Backend Developer",
+  "description": "REST API сервис учёта задач",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
