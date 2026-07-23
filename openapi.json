@@ -1,4 +1,4 @@
-﻿{
+{
   "openapi": "3.0.3",
   "info": {
     "title": "Task Hub API",
@@ -24,7 +24,9 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Проверить состояние API",
         "operationId": "getHealth",
         "responses": {
@@ -47,7 +49,9 @@
     },
     "/openapi.json": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Получить OpenAPI-спецификацию",
         "operationId": "getOpenApiDocument",
         "responses": {
@@ -59,7 +63,9 @@
     },
     "/tasks": {
       "get": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Получить список задач",
         "operationId": "listTasks",
         "parameters": [
@@ -102,7 +108,10 @@
             "description": "Поле сортировки. По умолчанию задачи сортируются по created_at desc.",
             "schema": {
               "type": "string",
-              "enum": ["due_date", "priority"]
+              "enum": [
+                "due_date",
+                "priority"
+              ]
             }
           },
           {
@@ -112,7 +121,10 @@
             "description": "Направление сортировки",
             "schema": {
               "type": "string",
-              "enum": ["asc", "desc"],
+              "enum": [
+                "asc",
+                "desc"
+              ],
               "default": "asc"
             }
           }
@@ -137,7 +149,9 @@
         }
       },
       "post": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Создать задачу",
         "operationId": "createTask",
         "requestBody": {
@@ -202,7 +216,9 @@
     },
     "/tasks/{id}": {
       "get": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Получить задачу по id",
         "operationId": "getTaskById",
         "parameters": [
@@ -233,7 +249,9 @@
         }
       },
       "patch": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Частично обновить задачу",
         "operationId": "patchTask",
         "parameters": [
@@ -277,7 +295,9 @@
         }
       },
       "put": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Полностью заменить изменяемые поля задачи",
         "operationId": "putTask",
         "parameters": [
@@ -324,7 +344,9 @@
         }
       },
       "delete": {
-        "tags": ["Tasks"],
+        "tags": [
+          "Tasks"
+        ],
         "summary": "Удалить задачу",
         "description": "Задача удаляется мягко через deleted_at и больше не доступна через публичные endpoints.",
         "operationId": "deleteTask",
@@ -342,6 +364,34 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/health/db": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Проверить подключение к базе данных",
+        "operationId": "getDatabaseHealth",
+        "responses": {
+          "200": {
+            "description": "База данных доступна",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseHealthResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "database": "ok"
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalServerError"
@@ -451,7 +501,10 @@
     "schemas": {
       "HealthResponse": {
         "type": "object",
-        "required": ["status", "service"],
+        "required": [
+          "status",
+          "service"
+        ],
         "properties": {
           "status": {
             "type": "string",
@@ -465,11 +518,19 @@
       },
       "TaskStatus": {
         "type": "string",
-        "enum": ["todo", "in_progress", "done"]
+        "enum": [
+          "todo",
+          "in_progress",
+          "done"
+        ]
       },
       "TaskPriority": {
         "type": "string",
-        "enum": ["low", "medium", "high"]
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ]
       },
       "Task": {
         "type": "object",
@@ -519,7 +580,10 @@
       },
       "CreateTaskRequest": {
         "type": "object",
-        "required": ["title", "priority"],
+        "required": [
+          "title",
+          "priority"
+        ],
         "additionalProperties": false,
         "properties": {
           "title": {
@@ -568,7 +632,12 @@
       },
       "PutTaskRequest": {
         "type": "object",
-        "required": ["title", "status", "priority", "due_date"],
+        "required": [
+          "title",
+          "status",
+          "priority",
+          "due_date"
+        ],
         "additionalProperties": false,
         "properties": {
           "title": {
@@ -593,7 +662,10 @@
       },
       "ListTasksResponse": {
         "type": "object",
-        "required": ["items", "pagination"],
+        "required": [
+          "items",
+          "pagination"
+        ],
         "properties": {
           "items": {
             "type": "array",
@@ -608,7 +680,11 @@
       },
       "Pagination": {
         "type": "object",
-        "required": ["offset", "limit", "total"],
+        "required": [
+          "offset",
+          "limit",
+          "total"
+        ],
         "properties": {
           "offset": {
             "type": "integer",
@@ -643,11 +719,18 @@
       },
       "ErrorResponse": {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
           "error": {
             "type": "object",
-            "required": ["code", "message", "details", "request_id"],
+            "required": [
+              "code",
+              "message",
+              "details",
+              "request_id"
+            ],
             "properties": {
               "code": {
                 "type": "string",
@@ -669,6 +752,23 @@
                 "example": "550e8400-e29b-41d4-a716-446655440000"
               }
             }
+          }
+        }
+      },
+      "DatabaseHealthResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "database": {
+            "type": "string",
+            "example": "ok"
           }
         }
       }

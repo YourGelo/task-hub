@@ -5,6 +5,7 @@ import helmet from "helmet";
 import { errorHandler } from "./common/middleware/error-handler.js";
 import { requestIdMiddleware } from "./common/middleware/request-id.js";
 import { registerOpenApiDocs } from "./docs/openapi.js";
+import { healthRoutes } from "./modules/health/health.routes.js";
 import { taskRoutes } from "./modules/tasks/task.routes.js";
 
 export function createApp() {
@@ -15,12 +16,7 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  app.get("/health", (_req, res) => {
-    res.status(200).json({
-      status: "ok",
-      service: "task-hub"
-    });
-  });
+  app.use("/health", healthRoutes);
 
   registerOpenApiDocs(app);
 
