@@ -1,5 +1,6 @@
 ﻿import type {
   CreateTaskInput,
+  ListTasksInput,
   PatchTaskInput,
   PutTaskInput
 } from "./task.types.js";
@@ -22,8 +23,8 @@ export class TaskService {
     return this.taskRepository.findById(id);
   }
 
-  listTasks() {
-    return this.taskRepository.findMany();
+  listTasks(input: ListTasksInput) {
+    return this.taskRepository.findMany(input);
   }
 
   async patchTask(id: string, input: PatchTaskInput) {

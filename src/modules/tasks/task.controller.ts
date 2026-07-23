@@ -4,6 +4,7 @@ import { NotFoundError, UnprocessableEntityError } from "../../common/errors/app
 import { mapTaskToResponse } from "./task.mapper.js";
 import {
   createTaskSchema,
+  listTasksQuerySchema,
   patchTaskSchema,
   putTaskSchema,
   taskIdParamsSchema
@@ -54,11 +55,24 @@ export class TaskController {
     res.status(200).json(mapTaskToResponse(task));
   };
 
-  listTasks = async (_req: Request, res: Response) => {
-    const tasks = await this.taskService.listTasks();
+  listTasks = async (req: Request, res: Response) => {
+    const query = listTasksQuerySchema.parse(req.query);
+
+    const result = await this.taskService.listTasks({
+      offset: query.offset,
+      limit: query.limit,
+      status: query.status,
+      sort: query.sort,
+      order: query.order
+    });
 
     res.status(200).json({
-      items: tasks.map(mapTaskToResponse)
+      items: result.items.map(mapTaskToResponse),
+      pagination: {
+        offset: query.offset,
+        limit: query.limit,
+        total: result.total
+      }
     });
   };
 

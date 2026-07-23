@@ -4,6 +4,10 @@ export const taskStatusSchema = z.enum(["todo", "in_progress", "done"]);
 
 export const taskPrioritySchema = z.enum(["low", "medium", "high"]);
 
+export const taskSortSchema = z.enum(["due_date", "priority"]);
+
+export const sortOrderSchema = z.enum(["asc", "desc"]);
+
 const timestampWithTimezoneSchema = z
   .string()
   .datetime({ offset: true })
@@ -48,6 +52,30 @@ export const putTaskSchema = z
   })
   .strict();
 
+export const listTasksQuerySchema = z
+  .object({
+    offset: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .default(0),
+
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .default(20),
+
+    status: taskStatusSchema.optional(),
+
+    sort: taskSortSchema.optional(),
+
+    order: sortOrderSchema.default("asc")
+  })
+  .strict();
+
 export type CreateTaskRequest = z.infer<typeof createTaskSchema>;
 export type PatchTaskRequest = z.infer<typeof patchTaskSchema>;
 export type PutTaskRequest = z.infer<typeof putTaskSchema>;
+export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;

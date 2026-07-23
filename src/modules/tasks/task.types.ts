@@ -2,6 +2,10 @@
 
 export type TaskPriority = "low" | "medium" | "high";
 
+export type ListTasksSort = "due_date" | "priority";
+
+export type SortOrder = "asc" | "desc";
+
 export type CreateTaskInput = {
   title: string;
   status?: TaskStatus;
@@ -21,4 +25,12 @@ export type PutTaskInput = {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: Date | null;
+};
+
+export type ListTasksInput = {
+  offset: number;
+  limit: number;
+  status?: TaskStatus;
+  sort?: ListTasksSort;
+  order: SortOrder;
 };
