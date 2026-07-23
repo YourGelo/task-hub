@@ -1,116 +1,54 @@
 ﻿import type { Request, Response } from "express";
 
+import { NotFoundError, UnprocessableEntityError } from "../../common/errors/app-error.js";
 import { mapTaskToResponse } from "./task.mapper.js";
+import {
+  createTaskSchema,
+  patchTaskSchema,
+  putTaskSchema,
+  taskIdParamsSchema
+} from "./task.schemas.js";
 import { TaskService } from "./task.service.js";
-import type { TaskPriority, TaskStatus } from "./task.types.js";
-
-const taskStatuses: TaskStatus[] = ["todo", "in_progress", "done"];
-const taskPriorities: TaskPriority[] = ["low", "medium", "high"];
-
-function isTaskStatus(value: unknown): value is TaskStatus {
-  return typeof value === "string" && taskStatuses.includes(value as TaskStatus);
-}
-
-function isTaskPriority(value: unknown): value is TaskPriority {
-  return typeof value === "string" && taskPriorities.includes(value as TaskPriority);
-}
-
-function parseDueDate(value: unknown): Date | null | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  if (typeof value !== "string") {
-    throw new Error("INVALID_DUE_DATE");
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    throw new Error("INVALID_DUE_DATE");
-  }
-
-  return date;
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function getRouteId(req: Request): string | null {
-  const id = req.params.id;
-
-  if (typeof id !== "string") {
-    return null;
-  }
-
-  return id;
-}
+import type { PatchTaskInput } from "./task.types.js";
 
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   createTask = async (req: Request, res: Response) => {
-    try {
-      const body = req.body as Record<string, unknown>;
+    const body = createTaskSchema.parse(req.body);
 
-      if (!isNonEmptyString(body.title)) {
-        res.status(400).json({ error: "title is required" });
-        return;
-      }
-
-      if (!isTaskPriority(body.priority)) {
-        res.status(400).json({ error: "priority is invalid" });
-        return;
-      }
-
-      if (body.status !== undefined && !isTaskStatus(body.status)) {
-        res.status(400).json({ error: "status is invalid" });
-        return;
-      }
-
-      const dueDate = parseDueDate(body.due_date);
-
-      if (dueDate && dueDate.getTime() < Date.now()) {
-        res.status(422).json({
-          error: "due_date cannot be in the past when creating a task"
-        });
-        return;
-      }
-
-      const task = await this.taskService.createTask({
-        title: body.title.trim(),
-        status: body.status as TaskStatus | undefined,
-        priority: body.priority,
-        dueDate
-      });
-
-      res
-        .location(`/tasks/${task.id}`)
-        .status(201)
-        .json(mapTaskToResponse(task));
-    } catch (error) {
-      res.status(400).json({ error: "invalid request data" });
+    if (body.due_date && body.due_date.getTime() < Date.now()) {
+      throw new UnprocessableEntityError(
+        "Due date cannot be in the past when creating a task",
+        [
+          {
+            field: "due_date",
+            message: "Expected a current or future timestamp"
+          }
+        ]
+      );
     }
+
+    const task = await this.taskService.createTask({
+      title: body.title,
+      status: body.status,
+      priority: body.priority,
+      dueDate: body.due_date ?? null
+    });
+
+    res
+      .location(`/tasks/${task.id}`)
+      .status(201)
+      .json(mapTaskToResponse(task));
   };
 
   getTask = async (req: Request, res: Response) => {
-    const id = getRouteId(req);
-
-    if (!id) {
-      res.status(400).json({ error: "id is invalid" });
-      return;
-    }
+    const { id } = taskIdParamsSchema.parse(req.params);
 
     const task = await this.taskService.getTask(id);
 
     if (!task) {
-      res.status(404).json({ error: "task not found" });
-      return;
+      throw new NotFoundError("Task not found");
     }
 
     res.status(200).json(mapTaskToResponse(task));
@@ -125,148 +63,61 @@ export class TaskController {
   };
 
   patchTask = async (req: Request, res: Response) => {
-    try {
-      const id = getRouteId(req);
+    const { id } = taskIdParamsSchema.parse(req.params);
+    const body = patchTaskSchema.parse(req.body);
 
-      if (!id) {
-        res.status(400).json({ error: "id is invalid" });
-        return;
-      }
+    const updateData: PatchTaskInput = {};
 
-      const body = req.body as Record<string, unknown>;
-
-      if ("id" in body) {
-        res.status(400).json({ error: "id cannot be changed" });
-        return;
-      }
-
-      const updateData: {
-        title?: string;
-        status?: TaskStatus;
-        priority?: TaskPriority;
-        dueDate?: Date | null;
-      } = {};
-
-      if ("title" in body) {
-        if (!isNonEmptyString(body.title)) {
-          res.status(400).json({ error: "title is invalid" });
-          return;
-        }
-
-        updateData.title = body.title.trim();
-      }
-
-      if ("status" in body) {
-        if (!isTaskStatus(body.status)) {
-          res.status(400).json({ error: "status is invalid" });
-          return;
-        }
-
-        updateData.status = body.status;
-      }
-
-      if ("priority" in body) {
-        if (!isTaskPriority(body.priority)) {
-          res.status(400).json({ error: "priority is invalid" });
-          return;
-        }
-
-        updateData.priority = body.priority;
-      }
-
-      if ("due_date" in body) {
-        updateData.dueDate = parseDueDate(body.due_date) ?? null;
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        res.status(400).json({
-          error: "request body must contain at least one field"
-        });
-        return;
-      }
-
-      const task = await this.taskService.patchTask(id, updateData);
-
-      if (!task) {
-        res.status(404).json({ error: "task not found" });
-        return;
-      }
-
-      res.status(200).json(mapTaskToResponse(task));
-    } catch (error) {
-      res.status(400).json({ error: "invalid request data" });
+    if (body.title !== undefined) {
+      updateData.title = body.title;
     }
+
+    if (body.status !== undefined) {
+      updateData.status = body.status;
+    }
+
+    if (body.priority !== undefined) {
+      updateData.priority = body.priority;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "due_date")) {
+      updateData.dueDate = body.due_date ?? null;
+    }
+
+    const task = await this.taskService.patchTask(id, updateData);
+
+    if (!task) {
+      throw new NotFoundError("Task not found");
+    }
+
+    res.status(200).json(mapTaskToResponse(task));
   };
 
   putTask = async (req: Request, res: Response) => {
-    try {
-      const id = getRouteId(req);
+    const { id } = taskIdParamsSchema.parse(req.params);
+    const body = putTaskSchema.parse(req.body);
 
-      if (!id) {
-        res.status(400).json({ error: "id is invalid" });
-        return;
-      }
+    const task = await this.taskService.putTask(id, {
+      title: body.title,
+      status: body.status,
+      priority: body.priority,
+      dueDate: body.due_date
+    });
 
-      const body = req.body as Record<string, unknown>;
-
-      if ("id" in body) {
-        res.status(400).json({ error: "id cannot be changed" });
-        return;
-      }
-
-      if (!isNonEmptyString(body.title)) {
-        res.status(400).json({ error: "title is required" });
-        return;
-      }
-
-      if (!isTaskStatus(body.status)) {
-        res.status(400).json({ error: "status is invalid" });
-        return;
-      }
-
-      if (!isTaskPriority(body.priority)) {
-        res.status(400).json({ error: "priority is invalid" });
-        return;
-      }
-
-      if (!("due_date" in body)) {
-        res.status(400).json({ error: "due_date key is required for PUT" });
-        return;
-      }
-
-      const dueDate = parseDueDate(body.due_date) ?? null;
-
-      const task = await this.taskService.putTask(id, {
-        title: body.title.trim(),
-        status: body.status,
-        priority: body.priority,
-        dueDate
-      });
-
-      if (!task) {
-        res.status(404).json({ error: "task not found" });
-        return;
-      }
-
-      res.status(200).json(mapTaskToResponse(task));
-    } catch (error) {
-      res.status(400).json({ error: "invalid request data" });
+    if (!task) {
+      throw new NotFoundError("Task not found");
     }
+
+    res.status(200).json(mapTaskToResponse(task));
   };
 
   deleteTask = async (req: Request, res: Response) => {
-    const id = getRouteId(req);
-
-    if (!id) {
-      res.status(400).json({ error: "id is invalid" });
-      return;
-    }
+    const { id } = taskIdParamsSchema.parse(req.params);
 
     const deleted = await this.taskService.deleteTask(id);
 
     if (!deleted) {
-      res.status(404).json({ error: "task not found" });
-      return;
+      throw new NotFoundError("Task not found");
     }
 
     res.status(204).send();
