@@ -1,4 +1,4 @@
-﻿services:
+services:
   frontend:
     build:
       context: ./frontend
@@ -8,7 +8,7 @@
     container_name: task-hub-frontend
     restart: unless-stopped
     ports:
-      - "7802:80"
+      - "${FRONTEND_PORT:-7802}:80"
     depends_on:
       app:
         condition: service_healthy
@@ -20,12 +20,12 @@
     container_name: task-hub-api
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: 7801
-      DATABASE_URL: postgresql://task_hub:task_hub_password@db:5432/task_hub?schema=public
-      CORS_ORIGIN: http://localhost:7802,http://localhost:5173,https://test.slimebase.ru
+      DATABASE_URL: ${DATABASE_URL:-postgresql://task_hub:task_hub_password@db:5432/task_hub?schema=public}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:7802,http://localhost:5173,https://test.slimebase.ru}
     ports:
-      - "7801:7801"
+      - "${BACKEND_PORT:-7801}:7801"
     depends_on:
       db:
         condition: service_healthy
@@ -36,10 +36,10 @@
     restart: unless-stopped
     environment:
       POSTGRES_USER: task_hub
-      POSTGRES_PASSWORD: task_hub_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-task_hub_password}
       POSTGRES_DB: task_hub
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - task-hub-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -59,7 +59,7 @@
       POSTGRES_PASSWORD: task_hub_password
       POSTGRES_DB: task_hub_test
     ports:
-      - "7804:5432"
+      - "${TEST_DB_PORT:-7804}:5432"
     volumes:
       - task-hub-postgres-test-data:/var/lib/postgresql/data
     healthcheck:
@@ -71,4 +71,3 @@
 volumes:
   task-hub-postgres-data:
   task-hub-postgres-test-data:
-
